@@ -38,7 +38,7 @@ zig build run-showcase
 Add your package in another Zig project:
 
 ```bash
-zig fetch --save <your-repo-url>
+zig fetch --save https://github.com/Andrew-Velox/Zigspinner.git
 ```
 
 In the consumer's build script, expose the module:
