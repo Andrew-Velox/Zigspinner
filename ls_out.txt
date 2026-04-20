@@ -1,0 +1,11 @@
+total 32
+drwxr-xr-x 1 Mohabbat 197121    0 Apr 21 02:07 ./
+drwxr-xr-x 1 Mohabbat 197121    0 Apr 21 00:38 ../
+drwxr-xr-x 1 Mohabbat 197121    0 Apr 21 00:42 .zig-cache/
+-rw-r--r-- 1 Mohabbat 197121 9638 Apr 21 01:04 build.zig
+-rw-r--r-- 1 Mohabbat 197121 4295 Apr 21 00:41 build.zig.zon
+drwxr-xr-x 1 Mohabbat 197121    0 Apr 21 02:06 examples/
+-rw-r--r-- 1 Mohabbat 197121    0 Apr 21 02:07 ls_out.txt
+-rw-r--r-- 1 Mohabbat 197121  146 Apr 21 02:07 output.txt
+drwxr-xr-x 1 Mohabbat 197121    0 Apr 21 00:59 src/
+drwxr-xr-x 1 Mohabbat 197121    0 Apr 21 01:00 zig-out/

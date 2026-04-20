@@ -1,0 +1,66 @@
+pub const arrows = @import("arrows.zig");
+pub const ascii = @import("ascii.zig");
+pub const braille = @import("braille.zig");
+pub const emoji = @import("emoji.zig");
+
+pub const prelude = struct {
+    pub const arrow = arrows.arrow;
+    pub const double_arrow = arrows.double_arrow;
+
+    pub const dqpb = ascii.dqpb;
+    pub const rolling_line = ascii.rolling_line;
+    pub const simple_dots = ascii.simple_dots;
+    pub const simple_dots_scrolling = ascii.simple_dots_scrolling;
+    pub const arc = ascii.arc;
+    pub const balloon = ascii.balloon;
+    pub const circle_halves = ascii.circle_halves;
+    pub const circle_quarters = ascii.circle_quarters;
+    pub const point = ascii.point;
+    pub const square_corners = ascii.square_corners;
+    pub const toggle = ascii.toggle;
+    pub const triangle = ascii.triangle;
+    pub const grow_horizontal = ascii.grow_horizontal;
+    pub const grow_vertical = ascii.grow_vertical;
+    pub const noise = ascii.noise;
+
+    pub const dots = braille.dots;
+    pub const dots2 = braille.dots2;
+    pub const dots3 = braille.dots3;
+    pub const dots4 = braille.dots4;
+    pub const dots5 = braille.dots5;
+    pub const dots6 = braille.dots6;
+    pub const dots7 = braille.dots7;
+    pub const dots8 = braille.dots8;
+    pub const dots9 = braille.dots9;
+    pub const dots10 = braille.dots10;
+    pub const dots11 = braille.dots11;
+    pub const dots12 = braille.dots12;
+    pub const dots13 = braille.dots13;
+    pub const dots14 = braille.dots14;
+    pub const dots_circle = braille.dots_circle;
+    pub const sand = braille.sand;
+    pub const bounce = braille.bounce;
+    pub const wave = braille.wave;
+    pub const scan = braille.scan;
+    pub const rain = braille.rain;
+    pub const pulse = braille.pulse;
+    pub const snake = braille.snake;
+    pub const sparkle = braille.sparkle;
+    pub const cascade = braille.cascade;
+    pub const columns = braille.columns;
+    pub const orbit = braille.orbit;
+    pub const breathe = braille.breathe;
+    pub const waverows = braille.waverows;
+    pub const checkerboard = braille.checkerboard;
+    pub const helix = braille.helix;
+    pub const fillsweep = braille.fillsweep;
+    pub const diagswipe = braille.diagswipe;
+    pub const infinity = braille.infinity;
+
+    pub const clock = emoji.clock;
+    pub const moon = emoji.moon;
+    pub const earth = emoji.earth;
+    pub const hearts = emoji.hearts;
+    pub const speaker = emoji.speaker;
+    pub const weather = emoji.weather;
+};
