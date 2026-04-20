@@ -1,0 +1,19 @@
+# Zig build artifacts
+.zig-cache/
+zig-cache/
+zig-out/
+
+# Build/run output dumps (generated during local testing)
+build_out.txt
+build_output.txt
+ls_out.txt
+output.txt
+run_out.txt
+output.log
+
+# Generic logs
+*.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
