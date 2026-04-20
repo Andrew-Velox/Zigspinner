@@ -1,4 +1,5 @@
-# Zigspinner
+# 🌀 Zigspinner
+![Demo](./.github/assets/demo.gif)
 
 A minimal terminal spinner library for Zig.
 
@@ -38,7 +39,7 @@ zig build run-showcase
 Add your package in another Zig project:
 
 ```bash
-zig fetch --save https://github.com/Andrew-Velox/Zigspinner.git
+zig fetch --save git+https://github.com/Andrew-Velox/Zigspinner.git
 ```
 
 In the consumer's build script, expose the module:
