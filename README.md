@@ -24,7 +24,8 @@ Inspired by the Rust project [rattles](https://github.com/vyfor/rattles) by [vyf
 
 ## Requirements
 
-- Zig 0.15.2 or newer
+- Minimum required: Zig 0.15.2
+- Verified working: Zig 0.15.2 and Zig 0.16.0
 
 ## Quick Start
 

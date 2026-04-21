@@ -6,9 +6,24 @@ fn configureTerminalOutput() void {
     switch (builtin.os.tag) {
         .windows => {
             const win = std.os.windows;
-            _ = win.kernel32.SetConsoleOutputCP(65001);
+            if (@hasDecl(win.kernel32, "SetConsoleOutputCP")) {
+                _ = win.kernel32.SetConsoleOutputCP(65001);
+            }
         },
         else => {},
+    }
+}
+
+fn framePause(ns: u64) void {
+    if (@hasDecl(std.Thread, "sleep")) {
+        std.Thread.sleep(ns);
+        return;
+    }
+
+    const yields: usize = @intCast(@max(@as(u64, 1), ns / 200_000));
+    var i: usize = 0;
+    while (i < yields) : (i += 1) {
+        _ = std.Thread.yield() catch {};
     }
 }
 
@@ -16,25 +31,17 @@ pub fn main() !void {
     configureTerminalOutput();
 
     var spinner = sp.presets.braille.dots();
-
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    const start = std.time.nanoTimestamp();
+    var elapsed: u64 = 0;
 
     while (true) {
-        const now = std.time.nanoTimestamp();
-        const elapsed: u64 = @intCast(now - start);
-
-        try stdout.print("\r{s}", .{spinner.frameAt(elapsed)});
-        try stdout.flush();
+        std.debug.print("\r{s}", .{spinner.frameAt(elapsed)});
 
         if (elapsed >= 4_000_000_000) break;
-        std.Thread.sleep(33_000_000);
+        framePause(33_000_000);
+        elapsed +%= 33_000_000;
     }
 
-    try stdout.print("\rDone\n", .{});
-    try stdout.flush();
+    std.debug.print("\rDone\n", .{});
 }
 
 test "preset spinner returns frame" {

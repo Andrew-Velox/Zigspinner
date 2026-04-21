@@ -2,6 +2,34 @@ const std = @import("std");
 const sp = @import("Zigspinner");
 const builtin = @import("builtin");
 
+const CompatOut = struct {
+    pub fn print(_: CompatOut, comptime fmt: []const u8, args: anytype) !void {
+        std.debug.print(fmt, args);
+    }
+
+    pub fn flush(_: CompatOut) !void {
+        return;
+    }
+};
+
+fn framePause(ns: u64) void {
+    if (@hasDecl(std, "Io") and @hasDecl(std.Io, "sleep") and @hasDecl(std.Options, "debug_io")) {
+        std.Io.sleep(std.Options.debug_io, std.Io.Duration.fromNanoseconds(@intCast(ns)), .awake) catch {};
+        return;
+    }
+
+    if (@hasDecl(std.Thread, "sleep")) {
+        std.Thread.sleep(ns);
+        return;
+    }
+
+    const yields: usize = @intCast(@max(@as(u64, 1), ns / 200_000));
+    var i: usize = 0;
+    while (i < yields) : (i += 1) {
+        _ = std.Thread.yield() catch {};
+    }
+}
+
 const panel_width: usize = 62; // visual columns per panel
 
 // ---------------------------------------------------------------------------
@@ -298,12 +326,20 @@ fn makeRow3(buf: []u8, l1: []const u8, f1: []const u8, l2: []const u8, f2: []con
 fn configureWindowsUtf8Console() void {
     if (builtin.os.tag != .windows) return;
     const win = std.os.windows;
-    _ = win.kernel32.SetConsoleOutputCP(65001);
+    if (@hasDecl(win.kernel32, "SetConsoleOutputCP")) {
+        _ = win.kernel32.SetConsoleOutputCP(65001);
+    }
 }
 
 fn setupWindowsRawInput() ?u32 {
     if (builtin.os.tag != .windows) return null;
     const win = std.os.windows;
+    if (!@hasDecl(win.kernel32, "GetStdHandle") or
+        !@hasDecl(win.kernel32, "GetConsoleMode") or
+        !@hasDecl(win.kernel32, "SetConsoleMode"))
+    {
+        return null;
+    }
     const stdin_handle = win.kernel32.GetStdHandle(win.STD_INPUT_HANDLE) orelse return null;
 
     var mode: u32 = 0;
@@ -319,6 +355,7 @@ fn setupWindowsRawInput() ?u32 {
 fn restoreWindowsInputMode(old_mode: ?u32) void {
     if (builtin.os.tag != .windows or old_mode == null) return;
     const win = std.os.windows;
+    if (!@hasDecl(win.kernel32, "GetStdHandle") or !@hasDecl(win.kernel32, "SetConsoleMode")) return;
     const stdin_handle = win.kernel32.GetStdHandle(win.STD_INPUT_HANDLE) orelse return;
     _ = win.kernel32.SetConsoleMode(stdin_handle, old_mode.?);
 }
@@ -333,6 +370,30 @@ const SharedInput = struct {
 };
 
 fn inputLoop(shared: *SharedInput) void {
+    if (builtin.zig_version.minor >= 16) {
+        const in = std.Io.File.stdin();
+        var stream_buf: [256]u8 = undefined;
+        var byte_buf: [1]u8 = undefined;
+
+        while (!shared.quit.load(.acquire)) {
+            var in_reader = in.readerStreaming(std.Options.debug_io, &stream_buf);
+            const n = in_reader.interface.readSliceShort(byte_buf[0..]) catch |err| switch (err) {
+                error.ReadFailed => break,
+            };
+            if (n == 0) continue;
+
+            switch (byte_buf[0]) {
+                'q', 'Q', 27 => {
+                    shared.quit.store(true, .release);
+                    break;
+                },
+                'r', 'R' => _ = shared.reverse_requests.fetchAdd(1, .acq_rel),
+                else => {},
+            }
+        }
+        return;
+    }
+
     const in = std.fs.File.stdin();
     var byte_buf: [1]u8 = undefined;
     while (!shared.quit.load(.acquire)) {
@@ -363,22 +424,13 @@ pub fn main() !void {
     const old_mode = setupWindowsRawInput();
     defer restoreWindowsInputMode(old_mode);
 
-    var stdout_buffer: [16384]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const out = &stdout_writer.interface;
+    const out = CompatOut{};
 
     try out.print("\x1b[?1049h\x1b[?25l", .{});
     try out.flush();
     defer {
         out.print("\x1b[?25h\x1b[?1049l", .{}) catch {};
         out.flush() catch {};
-    }
-
-    var shared_input = SharedInput{};
-    var input_thread = try std.Thread.spawn(.{}, inputLoop, .{&shared_input});
-    defer {
-        shared_input.quit.store(true, .release);
-        input_thread.detach();
     }
 
     const a_arrow = sp.presets.arrows.arrow();
@@ -444,6 +496,13 @@ pub fn main() !void {
     var reverse_on = false;
     var seen_reverse_requests: u32 = 0;
 
+    var shared_input = SharedInput{};
+    var input_thread = try std.Thread.spawn(.{}, inputLoop, .{&shared_input});
+    defer {
+        shared_input.quit.store(true, .release);
+        input_thread.detach();
+    }
+
     var step: u64 = 0;
     while (!shared_input.quit.load(.acquire)) : (step += 1) {
         const elapsed = step * 90_000_000;
@@ -500,12 +559,12 @@ pub fn main() !void {
             makeRow(&emoji_buf[5], "weather", fr(@TypeOf(e_weather), e_weather, reverse_on, elapsed)),
         };
 
-        try out.print("\x1b[H\x1b[J", .{});
+        try out.print("\x1b[H", .{});
         try out.print("q - quit | r - reverse\n", .{});
         try drawPanelPair(out, "Arrows", "ASCII", arrows_rows[0..], ascii_rows[0..]);
         try drawPanelPair(out, "Braille", "Emoji", braille_rows[0..], emoji_rows[0..]);
 
         try out.flush();
-        std.Thread.sleep(70_000_000);
+        framePause(90_000_000);
     }
 }

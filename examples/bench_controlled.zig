@@ -1,14 +1,34 @@
 const std = @import("std");
 const sp = @import("Zigspinner");
+const builtin = @import("builtin");
 
 const ITERATIONS: u64 = 20_000_000;
 
 fn iterationsFromEnv() u64 {
-    const env = std.process.getEnvVarOwned(std.heap.page_allocator, "BENCH_ITERS") catch return ITERATIONS;
-    defer std.heap.page_allocator.free(env);
+    if (@hasDecl(std.process, "getEnvMap")) {
+        var env_map = std.process.getEnvMap(std.heap.page_allocator) catch return ITERATIONS;
+        defer env_map.deinit();
 
-    const parsed = std.fmt.parseInt(u64, env, 10) catch return ITERATIONS;
-    return if (parsed == 0) ITERATIONS else parsed;
+        const env = env_map.get("BENCH_ITERS") orelse return ITERATIONS;
+        const parsed = std.fmt.parseInt(u64, env, 10) catch return ITERATIONS;
+        return if (parsed == 0) ITERATIONS else parsed;
+    }
+
+    if (@hasDecl(std.process, "Environ")) {
+        const environ: std.process.Environ = if (builtin.os.tag == .windows)
+            .{ .block = .global }
+        else
+            .{ .block = .empty };
+
+        var env_map = std.process.Environ.createMap(environ, std.heap.page_allocator) catch return ITERATIONS;
+        defer env_map.deinit();
+
+        const env = env_map.get("BENCH_ITERS") orelse return ITERATIONS;
+        const parsed = std.fmt.parseInt(u64, env, 10) catch return ITERATIONS;
+        return if (parsed == 0) ITERATIONS else parsed;
+    }
+
+    return ITERATIONS;
 }
 
 pub fn main() !void {
@@ -27,9 +47,5 @@ pub fn main() !void {
 
     std.mem.doNotOptimizeAway(checksum);
 
-    var stdout_buffer: [256]u8 = undefined;
-    var writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const out = &writer.interface;
-    try out.print("checksum={d}\n", .{checksum});
-    try out.flush();
+    std.debug.print("checksum={d}\n", .{checksum});
 }
