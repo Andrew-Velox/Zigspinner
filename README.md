@@ -59,7 +59,7 @@ const sp = @import("Zigspinner");
 
 ## Basic Usage
 
-### Timed spinner
+### Timed spinner (minimal)
 
 ```zig
 const std = @import("std");
@@ -85,6 +85,46 @@ pub fn main() !void {
     }
 }
 ```
+
+  ### Timed spinner (Unicode-safe on Windows)
+
+  ```zig
+  const std = @import("std");
+  const builtin = @import("builtin");
+  const sp = @import("Zigspinner");
+
+  fn configureTerminalOutput() void {
+    switch (builtin.os.tag) {
+      .windows => {
+        const win = std.os.windows;
+        _ = win.kernel32.SetConsoleOutputCP(65001);
+      },
+      else => {},
+    }
+  }
+
+  pub fn main() !void {
+    configureTerminalOutput();
+
+    var spinner = sp.presets.emoji.moon();
+
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const out = &stdout_writer.interface;
+
+    const start = std.time.nanoTimestamp();
+
+    while (true) {
+      const now = std.time.nanoTimestamp();
+      const elapsed: u64 = @intCast(now - start);
+
+      try out.print("\r{s}", .{spinner.frameAt(elapsed)});
+      try out.flush();
+
+      std.Thread.sleep(30_000_000);
+    }
+  }
+  ```
 
 ### Reverse direction
 
@@ -190,7 +230,10 @@ Main exports from src/root.zig:
 
 ## Notes For Windows Terminal
 
-If Unicode looks garbled:
+The bundled executables enable UTF-8 output on Windows automatically.
+For your own app code, use `configureTerminalOutput()` when rendering Unicode-heavy presets (emoji/braille).
+
+If Unicode still looks garbled:
 
 - Use a Unicode-capable terminal font (for example Cascadia Mono or JetBrains Mono)
 - Keep terminal encoding in UTF-8

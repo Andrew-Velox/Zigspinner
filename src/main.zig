@@ -1,8 +1,21 @@
 const std = @import("std");
 const sp = @import("Zigspinner");
+const builtin = @import("builtin");
+
+fn configureTerminalOutput() void {
+    switch (builtin.os.tag) {
+        .windows => {
+            const win = std.os.windows;
+            _ = win.kernel32.SetConsoleOutputCP(65001);
+        },
+        else => {},
+    }
+}
 
 pub fn main() !void {
-    var spinner = sp.presets.ascii.simple_dots_scrolling();
+    configureTerminalOutput();
+
+    var spinner = sp.presets.braille.dots();
 
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
