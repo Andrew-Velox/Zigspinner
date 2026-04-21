@@ -2,7 +2,7 @@ const std = @import("std");
 const sp = @import("Zigspinner");
 
 pub fn main() !void {
-    var spinner = sp.presets.braille.dots();
+    var spinner = sp.presets.ascii.simple_dots_scrolling();
 
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
