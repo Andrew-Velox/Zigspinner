@@ -1,0 +1,113 @@
+name: Benchmark
+
+"on":
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  benchmark:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Zigspinner
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Checkout rattles reference
+        uses: actions/checkout@v4
+        with:
+          repository: vyfor/rattles
+          path: rattles_ref
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.15.2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add controlled benchmark example to rattles
+        shell: pwsh
+        run: |
+          @'
+          use rattles::presets::prelude as presets;
+          use std::hint::black_box;
+          use std::time::Duration;
+
+          const ITERATIONS: u64 = 20_000_000;
+
+          fn iterations_from_env() -> u64 {
+              std::env::var("BENCH_ITERS")
+                  .ok()
+                  .and_then(|s| s.parse::<u64>().ok())
+                  .filter(|&n| n > 0)
+                  .unwrap_or(ITERATIONS)
+          }
+
+          fn main() {
+              let iterations = iterations_from_env();
+              let spinner = presets::dots();
+              let mut checksum: u64 = 0;
+              let mut elapsed_ms: u64 = 0;
+              let step_ms = spinner.interval().as_millis().max(1) as u64;
+
+              for _ in 0..iterations {
+                  let frame = spinner.frame_at(Duration::from_millis(elapsed_ms));
+                  checksum = checksum.wrapping_add(frame.as_bytes()[0] as u64);
+                  elapsed_ms = elapsed_ms.wrapping_add(step_ms);
+              }
+
+              println!("checksum={}", black_box(checksum));
+          }
+          '@ | Set-Content -LiteralPath rattles_ref/examples/bench_controlled.rs -Encoding UTF8
+
+      - name: Build Zigspinner (ReleaseFast)
+        shell: pwsh
+        run: zig build -Doptimize=ReleaseFast
+
+      - name: Build rattles benchmark (release)
+        shell: pwsh
+        run: cargo build --manifest-path rattles_ref/Cargo.toml --release --example bench_controlled
+
+      - name: Run strict benchmark and update README block
+        shell: pwsh
+        run: |
+          pwsh -File scripts/benchmark.ps1 `
+            -RustExe "${{ github.workspace }}/rattles_ref/target/release/examples/bench_controlled.exe" `
+            -ZigExe "${{ github.workspace }}/zig-out/bin/example-bench-controlled.exe" `
+            -Runs 12 `
+            -Iters 100000000 `
+            -OutJson "benchmark/latest.json" `
+            -OutMd "benchmark/latest.md" `
+            -ReadmePath "README.md" `
+            -UpdateReadme
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark/latest.json
+            benchmark/latest.md
+
+      - name: Commit benchmark refresh
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add README.md benchmark/latest.json benchmark/latest.md
+
+          if (git diff --cached --quiet) {
+            Write-Host "No benchmark changes to commit"
+            exit 0
+          }
+
+          git commit -m "docs: refresh benchmark snapshot"
+          git push

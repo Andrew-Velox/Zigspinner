@@ -107,11 +107,24 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    const bench_controlled_example = b.addExecutable(.{
+        .name = "example-bench-controlled",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/bench_controlled.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "Zigspinner", .module = mod },
+            },
+        }),
+    });
+
     // This declares intent for the executable to be installed into the
     // install prefix when running `zig build` (i.e. when executing the default
     // step). By default the install prefix is `zig-out/` but can be overridden
     // by passing `--prefix` or `-p`.
     b.installArtifact(exe);
+    b.installArtifact(bench_controlled_example);
 
     // This creates a top level step. Top level steps have a name and can be
     // invoked by name when running `zig build` (e.g. `zig build run`).
@@ -136,6 +149,10 @@ pub fn build(b: *std.Build) void {
     const run_showcase_step = b.step("run-showcase", "Run showcase example");
     const run_showcase_cmd = b.addRunArtifact(showcase_example);
     run_showcase_step.dependOn(&run_showcase_cmd.step);
+
+    const run_bench_step = b.step("run-bench", "Run controlled benchmark example");
+    const run_bench_cmd = b.addRunArtifact(bench_controlled_example);
+    run_bench_step.dependOn(&run_bench_cmd.step);
 
     // By making the run step depend on the default step, it will be run from the
     // installation directory rather than directly from within the cache directory.

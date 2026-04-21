@@ -1,9 +1,13 @@
 # 🌀 Zigspinner
 ![Demo](./.github/assets/demo.gif)
+<!-- ![Benchmark](https://img.shields.io/badge/benchmark-Zig%20faster%20in%20controlled%20loop-brightgreen)
+[![Benchmark CI](https://img.shields.io/github/actions/workflow/status/Andrew-Velox/Zigspinner/benchmark.yml?label=Benchmark%20CI)](https://github.com/Andrew-Velox/Zigspinner/actions/workflows/benchmark.yml) -->
 
 A minimal terminal spinner library for Zig.
 
 Zigspinner is inspired by Rust spinner crates and keeps spinner data compile-time friendly with a small runtime API.
+
+Inspired by the Rust project [rattles](https://github.com/vyfor/rattles) by [vyfor](https://github.com/vyfor).
 
 ## Features
 
@@ -33,6 +37,36 @@ zig build run
 zig build run-no-std
 zig build run-showcase
 ```
+
+## Performance
+
+Auto-generated benchmark block (updated by CI on release):
+
+<!-- BENCHMARK:START -->
+### Benchmark Snapshot (2026-04-21)
+
+Method:
+
+- Controlled, non-interactive spinner loop
+- Same workload in both implementations
+- BENCH_ITERS=100000000
+- CPU affinity pinned to one core when supported
+- 1 warmup + 12 measured runs each
+
+Results (seconds, lower is better):
+
+| Impl | Min | Mean | Median | Max |
+|---|---:|---:|---:|---:|
+| Rust (rattles) | 0.2557 | 0.2566 | 0.2565 | 0.2580 |
+| Zig (Zigspinner) | 0.0847 | 0.0879 | 0.0854 | 0.1108 |
+
+Winner:
+
+- By mean: Zig (65.73% faster)
+- By median: Zig (66.72% faster)
+<!-- BENCHMARK:END -->
+
+
 
 ## Use As A Dependency
 
@@ -241,3 +275,4 @@ If Unicode still looks garbled:
 ## License
 
 MIT
+

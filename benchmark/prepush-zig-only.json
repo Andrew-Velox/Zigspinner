@@ -1,0 +1,19 @@
+{
+    "date":  "2026-04-21",
+    "runs":  2,
+    "iterations":  1000000,
+    "mode":  "zig-only",
+    "rust":  null,
+    "zig":  {
+                "Name":  "Zig",
+                "Raw":  [
+                            0.0054497,
+                            0.0079393
+                        ],
+                "Min":  0.0054497,
+                "Mean":  0.0066945,
+                "Median":  0.0066945,
+                "Max":  0.0079393,
+                "PinningHadFailure":  true
+            }
+}
