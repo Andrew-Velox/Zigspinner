@@ -272,7 +272,4 @@ If Unicode still looks garbled:
 - Use a Unicode-capable terminal font (for example Cascadia Mono or JetBrains Mono)
 - Keep terminal encoding in UTF-8
 
-## License
-
-MIT
 
