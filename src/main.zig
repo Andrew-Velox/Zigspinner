@@ -1,8 +1,22 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const sp = @import("Zigspinner");
 
+fn configureTerminalOutput() void {
+    if (builtin.os.tag != .windows) return;
+
+    const win = std.os.windows;
+    const SetConsoleOutputCP = @extern(
+        *const fn (code_page_id: win.UINT) callconv(.winapi) win.BOOL,
+        .{ .name = "SetConsoleOutputCP", .library_name = "kernel32" },
+    );
+    _ = SetConsoleOutputCP(65001);
+}
+
 pub fn main() !void {
-    var spinner = sp.presets.ascii.simple_dots_scrolling();
+    configureTerminalOutput();
+
+    var spinner = sp.presets.emoji.moon();
     var elapsed: u64 = 0;
     const step_ns: u64 = 30_000_000;
 
