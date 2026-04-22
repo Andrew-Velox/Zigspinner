@@ -100,23 +100,28 @@ const sp = @import("Zigspinner");
 const std = @import("std");
 const sp = @import("Zigspinner");
 
+fn framePause(ns: u64) void {
+  if (@hasDecl(std.Thread, "sleep")) {
+    std.Thread.sleep(ns);
+    return;
+  }
+
+  const yields: usize = @intCast(@max(@as(u64, 1), ns / 200_000));
+  var i: usize = 0;
+  while (i < yields) : (i += 1) {
+    _ = std.Thread.yield() catch {};
+  }
+}
+
 pub fn main() !void {
     var spinner = sp.presets.ascii.simple_dots_scrolling();
-
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const out = &stdout_writer.interface;
-
-    const start = std.time.nanoTimestamp();
+  var elapsed: u64 = 0;
 
     while (true) {
-        const now = std.time.nanoTimestamp();
-        const elapsed: u64 = @intCast(now - start);
+    std.debug.print("\r{s}", .{spinner.frameAt(elapsed)});
 
-        try out.print("\r{s}", .{spinner.frameAt(elapsed)});
-        try out.flush();
-
-        std.Thread.sleep(30_000_000);
+    framePause(30_000_000);
+    elapsed +%= 30_000_000;
     }
 }
 ```
@@ -127,6 +132,19 @@ pub fn main() !void {
   const std = @import("std");
   const builtin = @import("builtin");
   const sp = @import("Zigspinner");
+
+  fn framePause(ns: u64) void {
+    if (@hasDecl(std.Thread, "sleep")) {
+      std.Thread.sleep(ns);
+      return;
+    }
+
+    const yields: usize = @intCast(@max(@as(u64, 1), ns / 200_000));
+    var i: usize = 0;
+    while (i < yields) : (i += 1) {
+      _ = std.Thread.yield() catch {};
+    }
+  }
 
   fn configureTerminalOutput() void {
     switch (builtin.os.tag) {
@@ -142,21 +160,13 @@ pub fn main() !void {
     configureTerminalOutput();
 
     var spinner = sp.presets.emoji.moon();
-
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const out = &stdout_writer.interface;
-
-    const start = std.time.nanoTimestamp();
+    var elapsed: u64 = 0;
 
     while (true) {
-      const now = std.time.nanoTimestamp();
-      const elapsed: u64 = @intCast(now - start);
+      std.debug.print("\r{s}", .{spinner.frameAt(elapsed)});
 
-      try out.print("\r{s}", .{spinner.frameAt(elapsed)});
-      try out.flush();
-
-      std.Thread.sleep(30_000_000);
+      framePause(30_000_000);
+      elapsed +%= 30_000_000;
     }
   }
   ```
