@@ -100,28 +100,20 @@ const sp = @import("Zigspinner");
 const std = @import("std");
 const sp = @import("Zigspinner");
 
-fn framePause(ns: u64) void {
-  if (@hasDecl(std.Thread, "sleep")) {
-    std.Thread.sleep(ns);
-    return;
-  }
-
-  const yields: usize = @intCast(@max(@as(u64, 1), ns / 200_000));
-  var i: usize = 0;
-  while (i < yields) : (i += 1) {
-    _ = std.Thread.yield() catch {};
-  }
-}
-
 pub fn main() !void {
     var spinner = sp.presets.ascii.simple_dots_scrolling();
-  var elapsed: u64 = 0;
+    var elapsed: u64 = 0;
+    const step_ns: u64 = 30_000_000;
 
     while (true) {
-    std.debug.print("\r{s}", .{spinner.frameAt(elapsed)});
+        std.debug.print("\r{s}", .{spinner.frameAt(elapsed)});
 
-    framePause(30_000_000);
-    elapsed +%= 30_000_000;
+        if (@hasDecl(std.Thread, "sleep")) {
+            std.Thread.sleep(step_ns);
+        } else {
+            _ = std.Thread.yield() catch {};
+        }
+        elapsed +%= step_ns;
     }
 }
 ```
@@ -132,19 +124,6 @@ pub fn main() !void {
   const std = @import("std");
   const builtin = @import("builtin");
   const sp = @import("Zigspinner");
-
-  fn framePause(ns: u64) void {
-    if (@hasDecl(std.Thread, "sleep")) {
-      std.Thread.sleep(ns);
-      return;
-    }
-
-    const yields: usize = @intCast(@max(@as(u64, 1), ns / 200_000));
-    var i: usize = 0;
-    while (i < yields) : (i += 1) {
-      _ = std.Thread.yield() catch {};
-    }
-  }
 
   fn configureTerminalOutput() void {
     switch (builtin.os.tag) {
@@ -161,12 +140,17 @@ pub fn main() !void {
 
     var spinner = sp.presets.emoji.moon();
     var elapsed: u64 = 0;
+    const step_ns: u64 = 30_000_000;
 
     while (true) {
       std.debug.print("\r{s}", .{spinner.frameAt(elapsed)});
 
-      framePause(30_000_000);
-      elapsed +%= 30_000_000;
+      if (@hasDecl(std.Thread, "sleep")) {
+        std.Thread.sleep(step_ns);
+      } else {
+        _ = std.Thread.yield() catch {};
+      }
+      elapsed +%= step_ns;
     }
   }
   ```
